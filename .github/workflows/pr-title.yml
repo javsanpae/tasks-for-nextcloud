@@ -1,0 +1,21 @@
+name: PR title
+
+# The PR title becomes the squash-merge commit message, and the release version is derived from it
+# (feat -> minor, fix -> patch, `!` -> major), so it has to follow Conventional Commits.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions: {}
+
+jobs:
+  title:
+    name: PR title
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Conventional Commit format
+        env:
+          TITLE: ${{ github.event.pull_request.title }}   # via env, never interpolated into the script
+        run: python3 .github/scripts/release_version.py check-title "$TITLE"

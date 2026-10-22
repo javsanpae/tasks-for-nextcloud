@@ -1,0 +1,111 @@
+name: Release
+
+# When something is merged into main: work out the next version from the Conventional Commits since the
+# last tag; if a release is due, build and sign the APK FIRST, and only then create the tag and the GitHub
+# release (so a failed build never leaves a tag behind).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: Decide version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      release: ${{ steps.next.outputs.release }}
+      version: ${{ steps.next.outputs.version }}
+      tag: ${{ steps.next.outputs.tag }}
+      version_code: ${{ steps.next.outputs.version_code }}
+      bump: ${{ steps.next.outputs.bump }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history and all tags
+      - id: next
+        run: python3 .github/scripts/release_version.py next
+
+  release:
+    name: Build, sign, publish
+    needs: version
+    if: needs.version.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write   # create the tag and the release
+    env:
+      TAG: ${{ needs.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Check signing secrets
+        id: key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::RELEASE_KEYSTORE_BASE64 is not set, so no release was published. See 'Releasing' in the README."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-java@v4
+        if: steps.key.outputs.signed == 'true'
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.key.outputs.signed == 'true'
+
+      - name: Decode signing key
+        if: steps.key.outputs.signed == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+
+      - name: Test, lint, build signed APK
+        if: steps.key.outputs.signed == 'true'
+        env:
+          NCTASKS_KEYSTORE: ${{ runner.temp }}/release.jks
+          NCTASKS_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          NCTASKS_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          NCTASKS_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          NCTASKS_VERSION_NAME: ${{ needs.version.outputs.version }}
+          NCTASKS_VERSION_CODE: ${{ needs.version.outputs.version_code }}
+        run: ./gradlew --no-daemon :app:testDebugUnitTest :app:lintDebug :app:assembleRelease
+
+      - name: Verify signature and name the artifacts
+        if: steps.key.outputs.signed == 'true'
+        run: |
+          APKSIGNER="$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)"
+          "$APKSIGNER" verify --print-certs app/build/outputs/apk/release/app-release.apk
+          cp app/build/outputs/apk/release/app-release.apk "tasks-for-nextcloud-${TAG}.apk"
+          sha256sum "tasks-for-nextcloud-${TAG}.apk" > "tasks-for-nextcloud-${TAG}.apk.sha256"
+
+      - name: Publish GitHub release (creates the tag)
+        if: steps.key.outputs.signed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$TAG" \
+            "tasks-for-nextcloud-${TAG}.apk" "tasks-for-nextcloud-${TAG}.apk.sha256" \
+            --target "$GITHUB_SHA" --title "$TAG" --generate-notes
+          {
+            echo "### Released $TAG"
+            echo "Bump: **${{ needs.version.outputs.bump }}**, versionCode ${{ needs.version.outputs.version_code }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"

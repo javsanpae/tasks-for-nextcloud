@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Tasks for Nextcloud</string>
+
+    <!-- Login -->
+    <string name="login_title">Tasks for Nextcloud</string>
+    <string name="login_subtitle">Connect to your Nextcloud server to see and manage your task lists.</string>
+    <string name="login_server_label">Server address</string>
+    <string name="login_server_hint">cloud.example.com</string>
+    <string name="login_continue">Log In</string>
+    <string name="login_waiting_title">Waiting for approval…</string>
+    <string name="login_waiting_body">Sign in and approve access in the browser, then return to this app.</string>
+    <string name="login_cancel">Cancel</string>
+    <string name="login_verifying">Checking your task lists…</string>
+    <string name="login_manual_toggle">Use an app password instead</string>
+    <string name="login_browser_toggle">Log in with the browser instead</string>
+    <string name="login_username">Username</string>
+    <string name="login_app_password">App password</string>
+    <string name="login_manual_continue">Sign In</string>
+    <string name="login_manual_hint">Create an app password in Nextcloud under Settings › Security › Devices &amp; sessions.</string>
+    <string name="login_privacy">Your Nextcloud password is never seen by this app. Only a revocable app password is kept, encrypted on this device. No analytics, no tracking.</string>
+    <string name="login_error_empty_url">Enter your server address.</string>
+    <string name="login_error_invalid_url">That doesn’t look like a valid address.</string>
+    <string name="login_error_insecure_url">Only secure (https) servers are supported.</string>
+    <string name="login_error_not_nextcloud">This doesn’t look like a Nextcloud server. Check the address.</string>
+    <string name="login_error_network">Can’t reach the server. Check your connection and the address.</string>
+    <string name="login_error_rejected">The server rejected these credentials.</string>
+    <string name="login_error_no_tasks">Signed in, but task lists aren’t available. Is the Tasks or Calendar app enabled on the server?</string>
+    <string name="login_error_timeout">Login timed out. Please try again.</string>
+    <string name="login_error_generic">Something went wrong. Please try again.</string>
+
+    <!-- Lists -->
+    <string name="lists_title">Lists</string>
+    <string name="lists_empty_title">No Lists</string>
+    <string name="lists_empty_body">Create a task list in the Nextcloud Tasks web app, then pull down to refresh.</string>
+    <string name="lists_read_only">Read-only</string>
+    <string name="menu_refresh">Refresh</string>
+    <string name="menu_sign_out">Sign Out</string>
+    <string name="menu_show_completed">Show Completed</string>
+    <string name="menu_hide_completed">Hide Completed</string>
+    <string name="menu_more">More</string>
+    <string name="sign_out_title">Sign out?</string>
+    <string name="sign_out_body">This removes the app password this device was given from your Nextcloud account.</string>
+    <string name="back_to_lists">Lists</string>
+
+    <!-- Tasks -->
+    <string name="task_new">New Task</string>
+    <string name="tasks_empty">No Tasks</string>
+    <string name="tasks_completed_header">Completed · %1$d</string>
+    <string name="task_mark_done">Mark as completed</string>
+    <string name="task_mark_open">Mark as not completed</string>
+    <string name="task_delete">Delete</string>
+    <string name="task_deleted">Task deleted</string>
+    <string name="task_undo">Undo</string>
+    <string name="task_repeats">Repeats</string>
+    <string name="due_today">Today</string>
+    <string name="due_tomorrow">Tomorrow</string>
+    <string name="due_yesterday">Yesterday</string>
+    <string name="due_with_time">%1$s, %2$s</string>
+    <string name="priority_marks_low">!</string>
+    <string name="priority_marks_medium">!!</string>
+    <string name="priority_marks_high">!!!</string>
+    <string name="error_offline">You’re offline. Showing saved tasks.</string>
+    <string name="error_rejected">The server refused a change, so it was undone.</string>
+    <string name="error_server">The server couldn’t process the request.</string>
+    <string name="error_read_only">This list is read-only.</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
+
+    <!-- Sync -->
+    <string name="sync_offline">Offline</string>
+    <string name="sync_error">Sync problem</string>
+    <string name="sync_syncing">Syncing…</string>
+    <string name="sync_head_waiting">%1$s · %2$s</string>
+    <plurals name="sync_waiting">
+        <item quantity="one">%d change waiting</item>
+        <item quantity="other">%d changes waiting</item>
+    </plurals>
+
+    <!-- Editor -->
+    <string name="editor_new_title">New Task</string>
+    <string name="editor_details_title">Details</string>
+    <string name="editor_cancel">Cancel</string>
+    <string name="editor_add">Add</string>
+    <string name="editor_done">Done</string>
+    <string name="editor_title_hint">Title</string>
+    <string name="editor_notes_hint">Notes</string>
+    <string name="editor_date">Date</string>
+    <string name="editor_time">Time</string>
+    <string name="editor_repeat">Repeat</string>
+    <string name="editor_priority">Priority</string>
+    <string name="editor_list">List</string>
+    <string name="editor_delete">Delete Task</string>
+    <string name="editor_delete_confirm_title">Delete this task?</string>
+    <string name="editor_delete_confirm_body">It will be removed from your Nextcloud.</string>
+    <string name="editor_repeat_needs_date">Set a date to make this task repeat.</string>
+    <string name="editor_repeat_unsupported">This task repeats in a way this app can’t edit. The repeat rule is kept as it is.</string>
+    <string name="priority_none">None</string>
+    <string name="priority_low">Low</string>
+    <string name="priority_medium">Medium</string>
+    <string name="priority_high">High</string>
+    <string name="calendar_previous_month">Previous month</string>
+    <string name="calendar_next_month">Next month</string>
+    <string name="time_am">AM</string>
+    <string name="time_pm">PM</string>
+    <string name="time_hour">Hour</string>
+    <string name="time_minute">Minute</string>
+    <string name="time_meridiem">AM or PM</string>
+
+    <!-- Repeat -->
+    <string name="repeat_title">Repeat</string>
+    <string name="repeat_back">Back</string>
+    <string name="repeat_never">Never</string>
+    <string name="repeat_daily">Daily</string>
+    <string name="repeat_weekly">Weekly</string>
+    <string name="repeat_monthly">Monthly</string>
+    <string name="repeat_yearly">Yearly</string>
+    <string name="repeat_every">Every</string>
+    <string name="repeat_decrease">Decrease interval</string>
+    <string name="repeat_increase">Increase interval</string>
+    <string name="repeat_on_days">On days</string>
+    <string name="repeat_monthly_by_date">Same date each month</string>
+    <string name="repeat_monthly_by_weekday">Same weekday each month</string>
+    <string name="repeat_monthly_day_n">Day %1$d</string>
+    <string name="repeat_monthly_last_day">Last day of the month</string>
+    <string name="repeat_ends">Ends</string>
+    <string name="repeat_end_never">Never</string>
+    <string name="repeat_end_after">After</string>
+    <string name="repeat_end_on">On date</string>
+    <string name="repeat_occurrences_decrease">Fewer occurrences</string>
+    <string name="repeat_occurrences_increase">More occurrences</string>
+    <plurals name="repeat_occurrences">
+        <item quantity="one">%d time</item>
+        <item quantity="other">%d times</item>
+    </plurals>
+    <plurals name="repeat_unit_daily">
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
+    <plurals name="repeat_unit_weekly">
+        <item quantity="one">week</item>
+        <item quantity="other">weeks</item>
+    </plurals>
+    <plurals name="repeat_unit_monthly">
+        <item quantity="one">month</item>
+        <item quantity="other">months</item>
+    </plurals>
+    <plurals name="repeat_unit_yearly">
+        <item quantity="one">year</item>
+        <item quantity="other">years</item>
+    </plurals>
+    <string name="repeat_summary_every_one">Every %1$s</string>
+    <string name="repeat_summary_every_many">Every %1$d %2$s</string>
+    <string name="repeat_summary_on_weekdays">%1$s on %2$s</string>
+    <string name="repeat_summary_nth_weekday">%1$s on the %2$s %3$s</string>
+    <string name="repeat_summary_last_day">%1$s on the last day</string>
+    <string name="repeat_summary_until">%1$s, until %2$s</string>
+    <string name="repeat_summary_count">%1$s, %2$d times</string>
+    <string name="repeat_unit_one_daily">day</string>
+    <string name="repeat_unit_one_weekly">week</string>
+    <string name="repeat_unit_one_monthly">month</string>
+    <string name="repeat_unit_one_yearly">year</string>
+    <string-array name="ordinals">
+        <item>first</item>
+        <item>second</item>
+        <item>third</item>
+        <item>fourth</item>
+        <item>fifth</item>
+    </string-array>
+    <string name="ordinal_last">last</string>
+</resources>

@@ -1,0 +1,73 @@
+name: CI
+
+# Runs for every pull request (including from forks, with a read-only token and no secrets)
+# and for every push to main.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  scripts:
+    name: Release scripts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s .github/scripts -v
+
+  android:
+    name: Build, test, lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4   # also validates the Gradle wrapper checksum
+
+      # recordRoborazziDebug runs ALL unit tests and also renders the real screens to PNG.
+      # assembleRelease proves the R8-minified build still works (unsigned here).
+      - name: Test, render screenshots, lint, build debug and release
+        run: ./gradlew --no-daemon :app:recordRoborazziDebug :app:lintDebug :app:assembleDebug :app:assembleRelease
+
+      - name: Summary
+        if: always()
+        run: python3 .github/scripts/test_summary.py >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload debug APK (try this PR on a phone)
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+
+      - name: Upload UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-screenshots
+          path: app/build/screenshots/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: |
+            app/build/reports/
+            app/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 14

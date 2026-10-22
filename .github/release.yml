@@ -1,0 +1,13 @@
+# Layout of the auto-generated release notes (labels are optional; unlabelled PRs land in "Other changes").
+changelog:
+  categories:
+    - title: Security
+      labels: [security]
+    - title: Features
+      labels: [feature, enhancement]
+    - title: Fixes
+      labels: [bug]
+    - title: Dependencies
+      labels: [dependencies]
+    - title: Other changes
+      labels: ["*"]
