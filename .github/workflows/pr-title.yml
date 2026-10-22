@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Check Conventional Commit format
         env:
           TITLE: ${{ github.event.pull_request.title }}   # via env, never interpolated into the script
