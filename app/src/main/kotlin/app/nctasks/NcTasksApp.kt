@@ -4,7 +4,13 @@ package app.nctasks
 
 import android.app.Application
 import app.nctasks.data.AppContainer
+import app.nctasks.reminders.ReminderNotifications
 
-class NcTasksApp : Application() {
-    val container: AppContainer by lazy { AppContainer(this) }
+open class NcTasksApp : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        ReminderNotifications.ensureChannel(this)
+    }
+
+    open val container: AppContainer by lazy { AppContainer(this) }
 }

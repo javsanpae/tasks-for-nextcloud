@@ -59,6 +59,10 @@ data class Task(
     val hasUnsupportedRecurrence: Boolean,
     /** The full VCALENDAR as received; edits are applied on top of it to preserve unknown data. */
     val ical: ICalComponent,
+    /** Alerts that notify; those other clients wrote in a form this app cannot edit stay in [ical] untouched. */
+    val reminders: List<Reminder> = emptyList(),
+    /** When the task was last changed (LAST-MODIFIED); alerts due before this never fire. */
+    val modifiedAt: Instant? = null,
 )
 
 /** What the editor produces; applied on top of an existing [Task] (or used to create a new one). */
@@ -69,8 +73,9 @@ data class TaskDraft(
     val start: TaskDate? = null,
     val due: TaskDate? = null,
     val recurrence: Recurrence? = null,
+    val reminders: List<Reminder> = emptyList(),
 ) {
     companion object {
-        fun from(task: Task) = TaskDraft(task.title, task.notes, task.priority, task.start, task.due, task.recurrence)
+        fun from(task: Task) = TaskDraft(task.title, task.notes, task.priority, task.start, task.due, task.recurrence, task.reminders)
     }
 }

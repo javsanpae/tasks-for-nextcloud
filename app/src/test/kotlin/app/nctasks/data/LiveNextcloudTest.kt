@@ -15,6 +15,7 @@ import app.nctasks.data.repo.OfflineFirstRepository
 import app.nctasks.data.repo.SyncResult
 import app.nctasks.domain.Priority
 import app.nctasks.domain.Recurrence
+import app.nctasks.domain.Reminder
 import app.nctasks.domain.Task
 import app.nctasks.domain.TaskDate
 import app.nctasks.domain.TaskDraft
@@ -29,6 +30,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
+import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
@@ -125,6 +127,59 @@ class LiveNextcloudTest {
                 println("LIVE: cleaned up ${current.size} test task(s)")
             }
             scope.cancel()
+        }
+    }
+
+    private fun liveClient(): Triple<CalDavClient, TodoCodec, app.nctasks.domain.TaskList>? {
+        val url = System.getenv("NC_URL"); val user = System.getenv("NC_USER"); val pass = System.getenv("NC_APP_PASSWORD")
+        if (url.isNullOrBlank() || user.isNullOrBlank() || pass.isNullOrBlank()) return null
+        val server = (ServerUrl.normalize(url) as ServerUrlResult.Valid).url
+        val codec = TodoCodec(ZoneId.of("Europe/Madrid"))
+        val client = CalDavClient(HttpClients.authenticated(), Credentials(server, user, pass), codec)
+        val list = runBlocking { client.taskLists().first { it.canWrite } }
+        return Triple(client, codec, list)
+    }
+
+    /** Alerts written by this app must be stored as standard VALARMs that Nextcloud accepts and returns. */
+    @Test fun remindersRoundTrip() = runBlocking {
+        val (client, codec, list) = liveClient() ?: return@runBlocking assumeTrue("live credentials not provided", false)
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val repo = OfflineFirstRepository(client, codec, InMemoryLocalStore(), scope, io = Dispatchers.Unconfined)
+        repo.load(); repo.sync()
+        try {
+            val due = TaskDate(LocalDate.now().plusDays(2), LocalTime.of(18, 0))
+            val created = repo.create(list, TaskDraft("$prefix alerts", due = due, reminders = listOf(
+                Reminder.before(Duration.ofMinutes(15)), Reminder.before(Duration.ofDays(1)), Reminder.before(Duration.ZERO))))
+            val allDay = repo.create(list, TaskDraft("$prefix alerts all-day", due = TaskDate(LocalDate.now().plusDays(3)), reminders = listOf(Reminder.allDay(1), Reminder.allDay(0))))
+            assertEquals(SyncResult.SUCCESS, repo.sync())
+            val onServer = client.tasks(list).associateBy { it.uid }
+            val t = onServer.getValue(created.uid)
+            println("LIVE: server stored alarms for timed task:\n" + ICalWriter.write(t.ical).lines().dropWhile { !it.startsWith("BEGIN:VALARM") }.takeWhile { it.isNotBlank() }.joinToString("\n"))
+            assertEquals(setOf<Reminder>(Reminder.before(Duration.ofMinutes(15)), Reminder.before(Duration.ofDays(1)), Reminder.before(Duration.ZERO)), t.reminders.toSet())
+            assertEquals(setOf<Reminder>(Reminder.allDay(1), Reminder.allDay(0)), onServer.getValue(allDay.uid).reminders.toSet())
+
+            // editing the title must not disturb the alarms; removing one alert removes exactly that VALARM
+            val local = repo.snapshot.value.tasksByList.getValue(list.url).first { it.uid == created.uid }
+            repo.update(local, TaskDraft.from(local).copy(title = "$prefix alerts (renamed)", reminders = local.reminders.filterNot { it == Reminder.before(Duration.ofDays(1)) }))
+            repo.sync()
+            val after = client.tasks(list).first { it.uid == created.uid }
+            assertEquals("$prefix alerts (renamed)", after.title)
+            assertEquals(2, after.reminders.size)
+        } finally {
+            if (System.getenv("NC_KEEP") != "1") client.tasks(list).filter { it.title.startsWith(prefix) }.forEach { runCatching { client.delete(it.url, null) } }
+            else println("LIVE: NC_KEEP=1 -> left test tasks in place")
+            scope.cancel()
+        }
+    }
+
+    /** Prints every "[nctasks-test]" task with its raw alarms, e.g. after adding an alert in the web UI. */
+    @Test fun printTestTasks() = runBlocking {
+        if (System.getenv("NC_PRINT") != "1") return@runBlocking assumeTrue("set NC_PRINT=1", false)
+        val (client, _, list) = liveClient() ?: return@runBlocking assumeTrue("live credentials not provided", false)
+        for (t in client.tasks(list).filter { it.title.startsWith(prefix) }) {
+            val alarms = t.ical.component("VTODO")!!.components.filter { it.name == "VALARM" }
+            println("LIVE: '${t.title}' due=${t.due} -> decoded reminders=${t.reminders}")
+            alarms.forEach { println("LIVE:    raw VALARM: " + it.properties.joinToString(" | ") { p -> p.name + p.params.joinToString("") { (k, v) -> ";$k=$v" } + ":" + p.value }) }
         }
     }
 }

@@ -39,6 +39,8 @@ class ICalComponent(
         return ICalComponent(this.name, result, components)
     }
 
+    fun withComponents(components: List<ICalComponent>): ICalComponent = ICalComponent(name, properties, components)
+
     fun withChild(old: ICalComponent, new: ICalComponent): ICalComponent =
         ICalComponent(name, properties, components.map { if (it === old) new else it })
 }

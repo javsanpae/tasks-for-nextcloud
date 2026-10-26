@@ -16,6 +16,11 @@ Thunderbird, iOS Reminders, etc.
 - **Recurring tasks** like the web app: daily / weekly (choose weekdays) / monthly (date, nth weekday, last day) /
   yearly, every *N* units, ending never / after *N* times / on a date. Completing a repeating task moves it to its
   next occurrence; the last occurrence completes it.
+- **Alerts** like a calendar app: pick any of several presets (at the time, 5/10/15/30 min, 1/2 h, 1/2 days, 1 week
+  before; for all-day tasks "on the day / N days before at 9:00") or build a custom one, up to 5 per task. When one is
+  due you get an Android notification with the task title and when it is due, and a **Complete** button that finishes the
+  task right from the notification shade (a repeating task moves on to its next date). Alerts are stored as standard
+  `VALARM`s, so they sync and also show up in the Nextcloud Tasks web app; alerts set there are shown and fire here too.
 - Due date and time, notes, priority; due-today / overdue highlighting; light and dark mode.
 - **Works offline**: the last-synced lists and tasks are cached (encrypted) and open instantly; changes made offline
   are queued and pushed when the connection returns (also on app start, pull-to-refresh and network-regained). The queue
@@ -64,7 +69,9 @@ app/src/main/kotlin/app/nctasks
 ├── data/caldav    CalDavClient (PROPFIND/REPORT/PUT/DELETE, discovery, ETag concurrency), hardened XML
 ├── data/auth      Login Flow v2, URL normalisation, Keystore-backed CredentialStore
 ├── data/repo      OfflineFirstRepository (local-first + change queue + sync/merge), LocalStore (encrypted cache), RemoteTasks
-├── domain         Task, TaskList, Recurrence (RRULE subset + next-occurrence calculator)
+├── domain         Task, TaskList, Recurrence (RRULE subset + next-occurrence calculator), Reminder + ReminderPlanner
+├── reminders      ReminderEngine (one exact alarm for the next reminder), notifications, boot/clock receiver
+├── background     WorkManager: hourly sync + flush after completing from a notification
 └── ui             Compose screens (login, lists, tasks, editor, repeat), iOS design system, view models
 ```
 
@@ -115,8 +122,9 @@ Verify a download with `sha256sum -c` and `apksigner verify --print-certs`.
 
 ## Limitations / roadmap
 
-- Pending changes are pushed only while the app is running (no background `WorkManager` job yet); the queue is persisted, so nothing is lost if the app is closed. Pulls download the full list each time (no sync-token/CTag optimisation yet).
-- Sub-tasks, reminders/alarms, tags, start dates and list creation/management are not editable yet (they are preserved).
+- Background sync runs about hourly while online (Android decides the exact moment), so a task created on another device gets its alert here only after the next sync; pulls download the full list each time (no sync-token/CTag optimisation yet).
+- Alert times for all-day tasks default to 9:00 (custom times are possible per alert); there is no snooze button yet.
+- Sub-tasks, tags, start dates and list creation/management are not editable yet (they are preserved).
 - Recurrence rules outside the supported subset (e.g. `BYSETPOS`, hourly) are shown as "repeats" and kept untouched.
 - Only English strings so far (everything is in `strings.xml`).
 - Fonts use the system sans-serif rather than SF Pro (licensing).

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import app.nctasks.data.ical.ICalComponent
 import app.nctasks.domain.Priority
 import app.nctasks.domain.Recurrence
+import app.nctasks.domain.Reminder
 import app.nctasks.domain.Task
 import app.nctasks.domain.TaskDate
 import app.nctasks.domain.TaskDraft
@@ -40,6 +41,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -161,4 +163,32 @@ class ScreenshotTests {
     @Test fun repeatWeekly() = repeatPage("14-repeat-weekly", "FREQ=WEEKLY;INTERVAL=2;BYDAY=TH,SA")
     @Test fun repeatMonthlyEnds() = repeatPage("15-repeat-monthly", "FREQ=MONTHLY;BYDAY=2TH;UNTIL=20261231")
     @Test fun repeatDark() = repeatPage("16-repeat-dark", "FREQ=DAILY;COUNT=10", dark = true)
+
+    private fun alertsPage(name: String, draft: TaskDraft, openCustom: Boolean = false, dark: Boolean = false) {
+        rule.setContent { IosTheme(dark = dark) { Editor(draft, isNew = false) } }
+        rule.onNodeWithText("Alerts").performClick()
+        rule.waitForIdle()
+        if (openCustom) { rule.onNodeWithText("Custom alert…").performClick(); rule.waitForIdle() }
+        rule.onRoot().captureRoboImage("build/screenshots/$name.png")
+    }
+
+    private val timedDue = TaskDate(today.plusDays(1), LocalTime.of(18, 0))
+
+    @Test fun editorWithAlerts() = shot("17-editor-alerts") {
+        Editor(TaskDraft("Dentist", due = timedDue, reminders = listOf(Reminder.before(Duration.ofMinutes(15)), Reminder.before(Duration.ofDays(1)))), isNew = false)
+    }
+
+    @Test fun alertsTimed() = alertsPage("18-alerts-timed", TaskDraft("Dentist", due = timedDue,
+        reminders = listOf(Reminder.before(Duration.ofMinutes(15)), Reminder.before(Duration.ofDays(1)), Reminder.before(Duration.ofMinutes(45)))))
+
+    @Test fun alertsAllDay() = alertsPage("19-alerts-allday", TaskDraft("Pay rent", due = TaskDate(today.plusDays(19)),
+        reminders = listOf(Reminder.allDay(1), Reminder.allDay(0, LocalTime.of(18, 30)))))
+
+    @Test fun alertsCustomOpen() = alertsPage("20-alerts-custom", TaskDraft("Dentist", due = timedDue), openCustom = true)
+
+    @Test fun alertsDark() = alertsPage("21-alerts-dark", TaskDraft("Dentist", due = timedDue, reminders = listOf(Reminder.before(Duration.ZERO))), dark = true)
+
+    @Test fun tasksWithAlertBell() = shot("22-tasks-bell") {
+        TasksContent(items = tasks.map { if (it.title == "Call the dentist") it.copy(reminders = listOf(Reminder.before(Duration.ofMinutes(15)))) else it })
+    }
 }
