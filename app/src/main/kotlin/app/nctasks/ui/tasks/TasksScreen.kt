@@ -32,6 +32,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -105,6 +106,7 @@ fun TasksScreen(
     onDelete: (Task) -> Unit,
     onToastAction: () -> Unit,
     modifier: Modifier = Modifier,
+    onAlertAdded: () -> Unit = {},
     now: LocalDateTime = LocalDateTime.now(),
 ) {
     val c = Ios.colors
@@ -228,6 +230,7 @@ fun TasksScreen(
                         onSave = { draft, targetList -> editor = null; onAdd(targetList, draft) },
                         onCancel = { editor = null },
                         onDelete = null,
+                        onAlertAdded = onAlertAdded,
                         now = now,
                     )
                     is EditorTarget.Existing -> {
@@ -241,6 +244,7 @@ fun TasksScreen(
                             onSave = { draft, _ -> editor = null; onEdit(task, draft) },
                             onCancel = { editor = null },
                             onDelete = if (list.canWrite) ({ editor = null; onDelete(task) }) else null,
+                            onAlertAdded = onAlertAdded,
                             now = now,
                         )
                     }
@@ -354,7 +358,8 @@ fun TaskRow(
                 if (task.notes.isNotBlank()) {
                     Text(task.notes.lineSequence().first(), style = Ios.type.subhead, color = c.secondaryLabel, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                if (due != null || task.recurrence != null || task.hasUnsupportedRecurrence) {
+                val hasAlerts = task.reminders.isNotEmpty() && !task.isCompleted
+                if (due != null || task.recurrence != null || task.hasUnsupportedRecurrence || hasAlerts) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (due != null) Text(due.text, style = Ios.type.subhead, color = if (due.isOverdue && !task.isCompleted) c.red else c.secondaryLabel)
                         if (task.recurrence != null || task.hasUnsupportedRecurrence) {
@@ -363,6 +368,14 @@ fun TaskRow(
                                 contentDescription = stringResource(R.string.task_repeats),
                                 tint = c.secondaryLabel,
                                 modifier = Modifier.padding(start = if (due != null) 6.dp else 0.dp).size(14.dp),
+                            )
+                        }
+                        if (hasAlerts) {
+                            Icon(
+                                Icons.Filled.Notifications,
+                                contentDescription = stringResource(R.string.task_has_alerts),
+                                tint = c.secondaryLabel,
+                                modifier = Modifier.padding(start = if (due != null || task.recurrence != null) 6.dp else 0.dp).size(14.dp),
                             )
                         }
                     }

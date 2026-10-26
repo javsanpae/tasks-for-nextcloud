@@ -136,7 +136,7 @@ private fun withFrequency(old: Recurrence?, f: Frequency?, anchor: LocalDate): R
 }
 
 @Composable
-private fun CheckRow(label: String, selected: Boolean, onClick: () -> Unit, subtitle: String? = null) {
+internal fun CheckRow(label: String, selected: Boolean, onClick: () -> Unit, subtitle: String? = null) {
     IosRow(onClick = onClick, modifier = Modifier.semantics { this.selected = selected }) {
         Column(Modifier.weight(1f)) {
             Text(label, style = Ios.type.body, color = Ios.colors.label)

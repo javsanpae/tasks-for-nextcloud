@@ -14,6 +14,24 @@ re-downloaded. Unsynced changes in a cache that can no longer be decrypted are l
 No analytics, crash reporting, advertising IDs or logging of URLs/credentials/task content. `allowBackup=false`
 and data-extraction rules exclude everything from cloud backup and device transfer.
 
+## Reminders (notifications)
+
+| Permission | Why |
+|---|---|
+| `POST_NOTIFICATIONS` | show the alerts; requested the first time you add one (Android 13+), and the app works without it |
+| `USE_EXACT_ALARM` (Android 13+) / `SCHEDULE_EXACT_ALARM` (≤ 12) | fire alerts on the minute; without it they fall back to inexact alarms that can be a few minutes late |
+| `RECEIVE_BOOT_COMPLETED` | re-arm the next alert after a reboot (alarms do not survive one) |
+| `ACCESS_NETWORK_STATE` | flush queued changes when connectivity returns |
+
+- Only **one** alarm is ever armed (the next due alert); it carries no task data. The only reminder state on disk is a
+  timestamp ("last checked"), kept in app-private preferences and deleted on sign-out.
+- The alert receiver is **not exported**; the notification's Complete button uses an explicit, immutable
+  `PendingIntent`, so other apps cannot trigger or alter it.
+- Notifications use `VISIBILITY_PRIVATE`: on the lock screen only "Task reminder" is shown, never the task title.
+- Alerts are not shown for completed tasks, and an alert whose moment already passed when it was set (or for a task
+  last edited after that moment) stays silent; alerts older than 24 h are never shown late.
+- On sign-out the alarm, all notifications, the background sync jobs and the encrypted cache are removed.
+
 ## Authentication
 
 - Primary: **Login Flow v2** in a Custom Tab (the user's real browser). The app only receives a revocable,
@@ -51,7 +69,7 @@ shrinking in release, warnings-as-errors in the build, lint errors fail the buil
 - No certificate pinning (the server is user-chosen).
 - Screenshots are not blocked (`FLAG_SECURE`) — tasks are content the user is meant to see.
 - No app lock / biometric gate; anyone who can unlock the device and app can read the (encrypted-at-rest) cache.
-- Pending changes are flushed only while the app process is alive (no background `WorkManager` job yet).
+- Background sync is best effort (WorkManager, about hourly): Android may defer it in battery-saver or Doze.
 
 ## Reporting
 

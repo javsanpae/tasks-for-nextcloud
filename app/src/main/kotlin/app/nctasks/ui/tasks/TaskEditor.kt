@@ -60,10 +60,12 @@ import androidx.compose.ui.unit.dp
 import app.nctasks.R
 import app.nctasks.domain.Priority
 import app.nctasks.domain.Recurrence
+import app.nctasks.domain.Reminder
 import app.nctasks.domain.TaskDate
 import app.nctasks.domain.TaskDraft
 import app.nctasks.domain.TaskList
 import app.nctasks.ui.components.Chevron
+import app.nctasks.ui.components.ClockIcon
 import app.nctasks.ui.components.ChevronDirection
 import app.nctasks.ui.components.GroupedCard
 import app.nctasks.ui.components.IosCalendar
@@ -86,7 +88,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
 
-private enum class Page { MAIN, REPEAT }
+private enum class Page { MAIN, REPEAT, ALERTS }
 private enum class Expanded { NONE, DATE, TIME }
 
 /** Everything the user can change in the sheet, survivable across rotation and process death. */
@@ -98,6 +100,7 @@ private class EditorState(initial: TaskDraft, defaultDate: LocalDate, defaultTim
     var hasTime by mutableStateOf(initial.due?.time != null)
     var time by mutableStateOf(initial.due?.time ?: defaultTime)
     var recurrence by mutableStateOf(initial.recurrence)
+    var reminders by mutableStateOf(initial.reminders)
     var priority by mutableStateOf(initial.priority)
     var listUrl by mutableStateOf(initialListUrl)
 
@@ -108,11 +111,12 @@ private class EditorState(initial: TaskDraft, defaultDate: LocalDate, defaultTim
         start = base.start,
         due = if (hasDate) TaskDate(date, if (hasTime) time else null) else null,
         recurrence = recurrence,
+        reminders = reminders,
     )
 
     companion object {
         fun saver(initial: TaskDraft, defaultDate: LocalDate, defaultTime: LocalTime, listUrl: String) = listSaver<EditorState, Any?>(
-            save = { listOf(it.title, it.notes, it.hasDate, it.date.toEpochDay(), it.hasTime, it.time.toSecondOfDay(), it.recurrence?.toRRule(), it.priority.name, it.listUrl) },
+            save = { listOf(it.title, it.notes, it.hasDate, it.date.toEpochDay(), it.hasTime, it.time.toSecondOfDay(), it.recurrence?.toRRule(), it.priority.name, it.listUrl, it.reminders.map(::encodeReminder)) },
             restore = {
                 EditorState(initial, defaultDate, defaultTime, listUrl).apply {
                     title = it[0] as String; notes = it[1] as String; hasDate = it[2] as Boolean
@@ -120,10 +124,28 @@ private class EditorState(initial: TaskDraft, defaultDate: LocalDate, defaultTim
                     time = LocalTime.ofSecondOfDay((it[5] as Int).toLong())
                     recurrence = (it[6] as String?)?.let(Recurrence::parse)
                     priority = Priority.valueOf(it[7] as String); this.listUrl = it[8] as String
+                    @Suppress("UNCHECKED_CAST")
+                    reminders = (it[9] as List<String>).mapNotNull(::decodeReminder)
                 }
             },
         )
     }
+}
+
+private fun encodeReminder(r: Reminder): String = when (r) {
+    is Reminder.Relative -> "R,${r.offset.seconds},${r.fromStart}"
+    is Reminder.Absolute -> "A,${r.at.epochSecond}"
+}
+
+private fun decodeReminder(s: String): Reminder? {
+    val p = s.split(',')
+    return runCatching {
+        when (p[0]) {
+            "R" -> Reminder.Relative(java.time.Duration.ofSeconds(p[1].toLong()), p[2].toBoolean())
+            "A" -> Reminder.Absolute(java.time.Instant.ofEpochSecond(p[1].toLong()))
+            else -> null
+        }
+    }.getOrNull()
 }
 
 /**
@@ -141,6 +163,7 @@ fun TaskEditor(
     onCancel: () -> Unit,
     onDelete: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    onAlertAdded: () -> Unit = {},
     now: LocalDateTime = LocalDateTime.now(),
     locale: Locale = Locale.getDefault(),
 ) {
@@ -179,14 +202,17 @@ fun TaskEditor(
                     Spacer(Modifier.width(6.dp))
                     Text(stringResource(R.string.repeat_back), style = Ios.type.body, color = c.blue)
                 }
-                Text(stringResource(R.string.repeat_title), style = Ios.type.headline, color = c.label, modifier = Modifier.align(Alignment.Center))
+                Text(
+                    stringResource(if (page == Page.ALERTS) R.string.alerts_title else R.string.repeat_title),
+                    style = Ios.type.headline, color = c.label, modifier = Modifier.align(Alignment.Center),
+                )
             }
         }
         AnimatedContent(
             targetState = page,
             modifier = Modifier.weight(1f),
             transitionSpec = {
-                if (targetState == Page.REPEAT) slideInHorizontally(tween(260)) { it } + fadeIn() togetherWith slideOutHorizontally(tween(260)) { -it / 3 } + fadeOut()
+                if (targetState != Page.MAIN) slideInHorizontally(tween(260)) { it } + fadeIn() togetherWith slideOutHorizontally(tween(260)) { -it / 3 } + fadeOut()
                 else slideInHorizontally(tween(260)) { -it / 3 } + fadeIn() togetherWith slideOutHorizontally(tween(260)) { it } + fadeOut()
             },
             label = "editor-page",
@@ -194,12 +220,15 @@ fun TaskEditor(
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = 8.dp, bottom = 32.dp)) {
                 if (current == Page.REPEAT) {
                     RecurrenceEditor(state.recurrence, state.date, { state.recurrence = it }, locale = locale)
+                } else if (current == Page.ALERTS) {
+                    AlertsEditor(state.reminders, allDay = !state.hasTime, onChange = { state.reminders = it }, onAdded = onAlertAdded, locale = locale)
                 } else {
                     MainPage(
                         state, isNew, lists, initial, hasUnsupportedRecurrence, canRepeat, expanded,
                         onExpand = { expanded = if (expanded == it) Expanded.NONE else it },
                         onSetExpanded = { expanded = it },
                         onOpenRepeat = { page = Page.REPEAT },
+                        onOpenAlerts = { page = Page.ALERTS },
                         onDelete = onDelete?.let { { confirmDelete = true } },
                         res = res, locale = locale, now = now,
                     )
@@ -232,6 +261,7 @@ private fun MainPage(
     onExpand: (Expanded) -> Unit,
     onSetExpanded: (Expanded) -> Unit,
     onOpenRepeat: () -> Unit,
+    onOpenAlerts: () -> Unit,
     onDelete: (() -> Unit)?,
     res: android.content.res.Resources,
     locale: Locale,
@@ -273,6 +303,7 @@ private fun MainPage(
                 state.hasDate = it
                 if (it) onSetExpanded(Expanded.DATE) else {
                     state.hasTime = false; state.recurrence = state.recurrence.takeIf { _ -> initial.start != null }; onSetExpanded(Expanded.NONE)
+                    if (initial.start == null) state.reminders = state.reminders.filterIsInstance<Reminder.Absolute>()
                 }
             })
         }
@@ -284,7 +315,7 @@ private fun MainPage(
         }
         RowDivider(startInset = 58.dp)
         IosRow(onClick = { if (state.hasTime) onExpand(Expanded.TIME) }, minHeight = 52.dp) {
-            SquareBadge(Icons.Filled.Notifications, c.blue)
+            SquareBadge(ClockIcon, c.blue)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.editor_time), style = Ios.type.body, color = c.label)
@@ -292,6 +323,7 @@ private fun MainPage(
             }
             IosSwitch(state.hasTime, {
                 state.hasTime = it
+                state.reminders = Reminder.convertAnchor(state.reminders, toAllDay = !it)
                 if (it) { state.hasDate = true; onSetExpanded(Expanded.TIME) } else onSetExpanded(Expanded.NONE)
             })
         }
@@ -313,6 +345,24 @@ private fun MainPage(
             )
             Spacer(Modifier.width(8.dp))
             if (canRepeat) Chevron()
+        }
+        val canAlert = canRepeat || state.reminders.isNotEmpty()
+        RowDivider(startInset = 58.dp)
+        IosRow(onClick = if (canAlert) onOpenAlerts else null, minHeight = 52.dp) {
+            SquareBadge(Icons.Filled.Notifications, c.orange)
+            Spacer(Modifier.width(12.dp))
+            Text(stringResource(R.string.editor_alerts), style = Ios.type.body, color = if (canAlert) c.label else c.secondaryLabel, modifier = Modifier.weight(1f))
+            Text(
+                when (state.reminders.size) {
+                    0 -> stringResource(R.string.editor_alerts_none)
+                    1 -> ReminderText.describe(res, state.reminders.single(), allDay = !state.hasTime, locale = locale)
+                    else -> androidx.compose.ui.res.pluralStringResource(R.plurals.editor_alerts_count, state.reminders.size, state.reminders.size)
+                },
+                style = Ios.type.body, color = c.secondaryLabel, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End,
+                modifier = Modifier.weight(1.4f),
+            )
+            Spacer(Modifier.width(8.dp))
+            if (canAlert) Chevron()
         }
     }
     if (!canRepeat) SectionFooter(stringResource(R.string.editor_repeat_needs_date))

@@ -167,4 +167,63 @@
         <item>fifth</item>
     </string-array>
     <string name="ordinal_last">last</string>
+
+    <!-- Alerts -->
+    <string name="editor_alerts">Alerts</string>
+    <string name="editor_alerts_none">None</string>
+    <plurals name="editor_alerts_count">
+        <item quantity="one">%d alert</item>
+        <item quantity="other">%d alerts</item>
+    </plurals>
+    <string name="editor_alerts_needs_date">Set a date to add alerts.</string>
+    <string name="alerts_title">Alerts</string>
+    <string name="alerts_other">Other alerts</string>
+    <string name="alerts_custom">Custom alert…</string>
+    <string name="alerts_custom_add">Add alert</string>
+    <string name="alerts_custom_days_before">Days before</string>
+    <string name="alerts_custom_time">At</string>
+    <string name="alerts_custom_unit_minutes">Minutes</string>
+    <string name="alerts_custom_unit_hours">Hours</string>
+    <string name="alerts_custom_unit_days">Days</string>
+    <string name="alerts_custom_unit_weeks">Weeks</string>
+    <string name="alerts_decrease">Decrease</string>
+    <string name="alerts_increase">Increase</string>
+    <string name="alerts_limit">You can set up to %d alerts on a task.</string>
+    <string name="alerts_notifications_off">Notifications are turned off for this app, so alerts won’t appear. Tap to change this in Settings.</string>
+    <string name="alerts_exact_hint">Alerts are shown even when your phone is idle; they arrive on the minute.</string>
+    <string name="alert_at_time">At time of task</string>
+    <string name="alert_before">%1$s before</string>
+    <string name="alert_after">%1$s after</string>
+    <string name="alert_on_day">On the day at %1$s</string>
+    <plurals name="alert_days_before_at">
+        <item quantity="one">%1$d day before at %2$s</item>
+        <item quantity="other">%1$d days before at %2$s</item>
+    </plurals>
+    <string name="alert_on_instant">On %1$s</string>
+    <plurals name="alert_unit_minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+    <plurals name="alert_unit_hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+    <plurals name="alert_unit_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <plurals name="alert_unit_weeks">
+        <item quantity="one">%d week</item>
+        <item quantity="other">%d weeks</item>
+    </plurals>
+    <string name="task_has_alerts">Has alerts</string>
+
+    <!-- Notifications -->
+    <string name="notif_channel_name">Task reminders</string>
+    <string name="notif_channel_description">Alerts you set on tasks, shown when they are due</string>
+    <string name="notif_untitled">Untitled task</string>
+    <string name="notif_reminder">Task reminder</string>
+    <string name="notif_due">Due %1$s</string>
+    <string name="notif_overdue">Overdue · %1$s</string>
+    <string name="notif_action_complete">Complete</string>
 </resources>

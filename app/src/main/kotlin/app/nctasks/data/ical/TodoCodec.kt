@@ -4,10 +4,12 @@ package app.nctasks.data.ical
 
 import app.nctasks.domain.Priority
 import app.nctasks.domain.Recurrence
+import app.nctasks.domain.Reminder
 import app.nctasks.domain.RecurrenceCalculator
 import app.nctasks.domain.Task
 import app.nctasks.domain.TaskDate
 import app.nctasks.domain.TaskDraft
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -60,7 +62,43 @@ class TodoCodec(
             recurrence = recurrence,
             hasUnsupportedRecurrence = rrule != null && recurrence == null,
             ical = calendar,
+            reminders = todo.components.mapNotNull(::decodeAlarm),
+            modifiedAt = (todo.property("LAST-MODIFIED") ?: todo.property("DTSTAMP") ?: todo.property("CREATED"))
+                ?.let(::parseDate)?.let(::toInstant),
         )
+    }
+
+    /** A VALARM we can show and edit (a notification-style alert with a duration or absolute trigger), else null. */
+    private fun decodeAlarm(c: ICalComponent): Reminder? {
+        if (!c.name.equals("VALARM", ignoreCase = true)) return null
+        val action = c.property("ACTION")?.value?.trim()?.uppercase()
+        if (action != "DISPLAY" && action != "AUDIO") return null
+        val trigger = c.property("TRIGGER") ?: return null
+        if (trigger.param("VALUE").equals("DATE-TIME", ignoreCase = true)) {
+            val at = (parseDate(trigger) as? IcsDate.Utc)?.instant ?: return null
+            return Reminder.Absolute(at, c)
+        }
+        val offset = Iso8601Duration.parse(trigger.value) ?: return null
+        return Reminder.Relative(offset, fromStart = !trigger.param("RELATED").equals("END", ignoreCase = true), raw = c)
+    }
+
+    private fun encodeAlarm(r: Reminder, todo: ICalComponent): ICalComponent {
+        r.raw?.let { return it }
+        val trigger = when (r) {
+            is Reminder.Absolute -> ICalProperty("TRIGGER", listOf("VALUE" to "DATE-TIME"), formatUtc(r.at))
+            is Reminder.Relative -> ICalProperty(
+                "TRIGGER",
+                if (!r.fromStart && todo.property("DUE") != null) listOf("RELATED" to "END") else emptyList(),
+                Iso8601Duration.format(r.offset),
+            )
+        }
+        return ICalComponent("VALARM", listOf(prop("ACTION", "DISPLAY"), prop("DESCRIPTION", "Reminder"), trigger))
+    }
+
+    /** Replaces the alerts we understand with [reminders]; alarms of other kinds (e-mail, ...) are left alone. */
+    private fun applyReminders(todo: ICalComponent, reminders: List<Reminder>): ICalComponent {
+        val kept = todo.components.filterNot { it.name.equals("VALARM", true) && decodeAlarm(it) != null }
+        return todo.withComponents(kept + reminders.take(Reminder.MAX_PER_TASK).map { encodeAlarm(it, todo) })
     }
 
     fun create(uid: String, draft: TaskDraft): ICalComponent {
@@ -129,6 +167,7 @@ class TodoCodec(
             start = pick(base.start, local.start, server.start),
             due = pick(base.due, local.due, server.due),
             recurrence = pick(base.recurrence, local.recurrence, server.recurrence),
+            reminders = pick(base.reminders, local.reminders, server.reminders),
         )
         val completed = pick(base.isCompleted, local.isCompleted, server.isCompleted)
         return mutateTodo(server.ical) { todo ->
@@ -170,6 +209,9 @@ class TodoCodec(
         // An unsupported RRULE is never overwritten unless the user explicitly picked a new one.
         if (previous == null || draft.recurrence != previous.recurrence) {
             t = t.withProperty("RRULE", draft.recurrence?.let { prop("RRULE", it.toRRule()) })
+        }
+        if (previous == null && draft.reminders.isNotEmpty() || previous != null && draft.reminders != previous.reminders) {
+            t = applyReminders(t, draft.reminders)
         }
         return t
     }

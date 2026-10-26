@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.nctasks.ui
 
+import android.Manifest
 import android.app.Activity
+import android.content.pm.PackageManager
+import android.os.Build
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.AnimatedContent
@@ -15,6 +18,8 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -89,6 +94,14 @@ private fun SignedInRoute(container: AppContainer, session: Session) {
     DisposableEffect(vm) { onDispose { vm.wipe() } }
     val state by vm.state.collectAsStateWithLifecycle()
     var confirmSignOut by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
+    // Android 13+ needs the user's consent before any notification; ask when they first add an alert.
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    val requestNotificationPermission = {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
 
     val errorText = state.error?.let { stringResource(errorRes(it)) }
     val deletedText = stringResource(R.string.task_deleted)
@@ -146,6 +159,7 @@ private fun SignedInRoute(container: AppContainer, session: Session) {
                 onEdit = vm::edit,
                 onDelete = vm::delete,
                 onToastAction = { if (state.undoDelete != null) vm.undoDelete() else vm.dismissError() },
+                onAlertAdded = requestNotificationPermission,
             )
         }
     }
