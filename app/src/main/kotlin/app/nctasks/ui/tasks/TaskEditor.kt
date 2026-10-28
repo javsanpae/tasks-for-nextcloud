@@ -116,14 +116,14 @@ private class EditorState(initial: TaskDraft, defaultDate: LocalDate, defaultTim
 
     companion object {
         fun saver(initial: TaskDraft, defaultDate: LocalDate, defaultTime: LocalTime, listUrl: String) = listSaver<EditorState, Any?>(
-            save = { listOf(it.title, it.notes, it.hasDate, it.date.toEpochDay(), it.hasTime, it.time.toSecondOfDay(), it.recurrence?.toRRule(), it.priority.name, it.listUrl, it.reminders.map(::encodeReminder)) },
+            save = { listOf(it.title, it.notes, it.hasDate, it.date.toEpochDay(), it.hasTime, it.time.toSecondOfDay(), it.recurrence?.toRRule(), it.priority, it.listUrl, it.reminders.map(::encodeReminder)) },
             restore = {
                 EditorState(initial, defaultDate, defaultTime, listUrl).apply {
                     title = it[0] as String; notes = it[1] as String; hasDate = it[2] as Boolean
                     date = LocalDate.ofEpochDay(it[3] as Long); hasTime = it[4] as Boolean
                     time = LocalTime.ofSecondOfDay((it[5] as Int).toLong())
                     recurrence = (it[6] as String?)?.let(Recurrence::parse)
-                    priority = Priority.valueOf(it[7] as String); this.listUrl = it[8] as String
+                    priority = it[7] as Int; this.listUrl = it[8] as String
                     @Suppress("UNCHECKED_CAST")
                     reminders = (it[9] as List<String>).mapNotNull(::decodeReminder)
                 }
@@ -372,15 +372,13 @@ private fun MainPage(
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
             Text(stringResource(R.string.editor_priority), style = Ios.type.caption, color = c.secondaryLabel)
             Spacer(Modifier.height(8.dp))
-            IosSegmented(
-                listOf(
-                    Priority.NONE to stringResource(R.string.priority_none),
-                    Priority.LOW to stringResource(R.string.priority_low),
-                    Priority.MEDIUM to stringResource(R.string.priority_medium),
-                    Priority.HIGH to stringResource(R.string.priority_high),
-                ),
-                state.priority, { state.priority = it },
-            )
+            val none = stringResource(R.string.priority_none)
+            val options = Priority.range.map { it to if (it == Priority.NONE) none else it.toString() }
+            IosSegmented(options.take(5), state.priority, { state.priority = it })
+            Spacer(Modifier.height(6.dp))
+            IosSegmented(options.drop(5), state.priority, { state.priority = it })
+            Spacer(Modifier.height(8.dp))
+            Text(stringResource(R.string.editor_priority_hint), style = Ios.type.caption, color = c.secondaryLabel)
         }
         if (isNew && lists.size > 1) {
             RowDivider()

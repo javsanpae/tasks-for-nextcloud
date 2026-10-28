@@ -69,6 +69,14 @@ class TodoCodecTest {
         assertEquals("FREQ=HOURLY;INTERVAL=3", updated.property("RRULE")!!.value)
     }
 
+    @Test fun `every priority from 0 to 9 survives a round trip`() {
+        for (p in 0..9) {
+            val todo = roundTrip(codec.create("uid-$p", TaskDraft("t", priority = p)))
+            assertEquals(p, decode(ics("SUMMARY:x", "PRIORITY:$p")).priority)
+            assertEquals(if (p == 0) null else p.toString(), todo.property("PRIORITY")?.value)
+        }
+    }
+
     @Test fun `create produces a valid new task`() {
         val draft = TaskDraft("Pay rent", "monthly", Priority.MEDIUM, null, TaskDate(LocalDate.of(2025, 4, 1)),
             Recurrence.parse("FREQ=MONTHLY"))

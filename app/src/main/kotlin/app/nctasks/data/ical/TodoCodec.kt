@@ -198,7 +198,7 @@ class TodoCodec(
             t = t.withProperty("DESCRIPTION", draft.notes.takeIf { it.isNotBlank() }?.let { prop("DESCRIPTION", ICalText.escape(it)) })
         }
         if (previous == null || draft.priority != previous.priority) {
-            t = t.withProperty("PRIORITY", draft.priority.takeIf { it != Priority.NONE }?.let { prop("PRIORITY", it.ical.toString()) })
+            t = t.withProperty("PRIORITY", draft.priority.takeIf { it != Priority.NONE }?.let { prop("PRIORITY", it.toString()) })
         }
         if (previous == null || draft.start != previous.start) {
             t = setDate(t, "DTSTART", draft.start, todo.property("DTSTART")?.let(::parseDate))

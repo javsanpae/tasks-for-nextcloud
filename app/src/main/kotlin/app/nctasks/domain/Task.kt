@@ -17,18 +17,16 @@ data class TaskDate(val date: LocalDate, val time: LocalTime? = null) : Comparab
     override fun compareTo(other: TaskDate): Int = toDateTime().compareTo(other.toDateTime())
 }
 
-enum class Priority(val ical: Int) {
-    NONE(0), LOW(9), MEDIUM(5), HIGH(1);
+/** Task priority as iCalendar (RFC 5545) defines it and the Nextcloud Tasks web app shows it: 0 is unset, 1 the most urgent, 9 the least. */
+object Priority {
+    const val NONE = 0
+    const val HIGH = 1
+    const val MEDIUM = 5
+    const val LOW = 9
+    val range = 0..9
 
-    companion object {
-        fun fromIcal(value: Int): Priority = when (value) {
-            0 -> NONE
-            in 1..4 -> HIGH
-            5 -> MEDIUM
-            in 6..9 -> LOW
-            else -> NONE
-        }
-    }
+    /** Values outside 0..9 are invalid in iCalendar and treated as unset. */
+    fun fromIcal(value: Int): Int = value.takeIf { it in range } ?: NONE
 }
 
 data class TaskList(
@@ -50,7 +48,7 @@ data class Task(
     val notes: String,
     val isCompleted: Boolean,
     val completedAt: Instant?,
-    val priority: Priority,
+    val priority: Int,
     val start: TaskDate?,
     val due: TaskDate?,
     /** Null when the task does not repeat or uses a rule the app cannot represent. */
@@ -69,7 +67,7 @@ data class Task(
 data class TaskDraft(
     val title: String,
     val notes: String = "",
-    val priority: Priority = Priority.NONE,
+    val priority: Int = Priority.NONE,
     val start: TaskDate? = null,
     val due: TaskDate? = null,
     val recurrence: Recurrence? = null,

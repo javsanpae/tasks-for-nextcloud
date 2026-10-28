@@ -62,7 +62,7 @@ class ScreenshotTests {
     private val readOnly = TaskList("https://c/shared/", "Family (shared)", 0xFFAF52DE.toInt(), canWrite = false)
     private val lists = listOf(personal, shopping, work, readOnly)
 
-    private fun task(title: String, due: TaskDate? = null, notes: String = "", done: Boolean = false, priority: Priority = Priority.NONE, rrule: String? = null) =
+    private fun task(title: String, due: TaskDate? = null, notes: String = "", done: Boolean = false, priority: Int = Priority.NONE, rrule: String? = null) =
         Task("https://c/personal/${title.hashCode()}.ics", "\"e\"", personal.url, title, title, notes, done, if (done) Instant.parse("2026-03-10T10:00:00Z") else null,
             priority, null, due, rrule?.let(Recurrence::parse), false, ICalComponent("VCALENDAR"))
 
