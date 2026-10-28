@@ -14,11 +14,12 @@ import java.time.format.FormatStyle
 import java.util.Locale
 
 object TaskSorting {
-    private val rank = mapOf(Priority.HIGH to 3, Priority.MEDIUM to 2, Priority.LOW to 1, Priority.NONE to 0)
+    /** 1 is the most urgent; unset (0) sorts after 9. */
+    private fun urgency(priority: Int) = if (priority == Priority.NONE) Priority.range.last + 1 else priority
 
     /** Open tasks: soonest due first, undated last; then priority, then title. */
     fun open(tasks: List<Task>): List<Task> = tasks.filterNot { it.isCompleted }.sortedWith(
-        compareBy<Task>({ it.due == null }, { it.due?.toDateTime() }, { -rank.getValue(it.priority) }, { it.title.lowercase() }),
+        compareBy<Task>({ it.due == null }, { it.due?.toDateTime() }, { urgency(it.priority) }, { it.title.lowercase() }),
     )
 
     /** Completed tasks: most recently completed first. */

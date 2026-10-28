@@ -95,9 +95,7 @@
     <string name="editor_repeat_needs_date">Set a date to make this task repeat.</string>
     <string name="editor_repeat_unsupported">This task repeats in a way this app can’t edit. The repeat rule is kept as it is.</string>
     <string name="priority_none">None</string>
-    <string name="priority_low">Low</string>
-    <string name="priority_medium">Medium</string>
-    <string name="priority_high">High</string>
+    <string name="editor_priority_hint">1 is the highest priority, 9 the lowest.</string>
     <string name="calendar_previous_month">Previous month</string>
     <string name="calendar_next_month">Next month</string>
     <string name="time_am">AM</string>

@@ -340,8 +340,8 @@ fun TaskRow(
                     if (task.priority != Priority.NONE) {
                         Text(
                             stringResource(when (task.priority) {
-                                Priority.HIGH -> R.string.priority_marks_high
-                                Priority.MEDIUM -> R.string.priority_marks_medium
+                                in 1..4 -> R.string.priority_marks_high
+                                5 -> R.string.priority_marks_medium
                                 else -> R.string.priority_marks_low
                             }),
                             style = Ios.type.body, color = tint, modifier = Modifier.padding(end = 6.dp),

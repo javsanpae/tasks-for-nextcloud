@@ -27,7 +27,7 @@ import java.util.Locale
 class PresentationTest {
     private val now = LocalDateTime.of(2026, 3, 12, 10, 30)
     private val today = now.toLocalDate()
-    private fun t(title: String, due: TaskDate? = null, p: Priority = Priority.NONE, done: Boolean = false, at: String? = null) =
+    private fun t(title: String, due: TaskDate? = null, p: Int = Priority.NONE, done: Boolean = false, at: String? = null) =
         Task("u/$title", null, "l", title, title, "", done, at?.let(Instant::parse), p, null, due, null, false, ICalComponent("VCALENDAR"))
 
     @Test fun `open tasks sort by due date then priority then title, undated last`() {
@@ -36,6 +36,11 @@ class PresentationTest {
             t("z-high", TaskDate(today), Priority.HIGH), t("done", done = true),
         )).map { it.title }
         assertEquals(listOf("z-high", "a-low", "b-later", "undated"), sorted)
+    }
+
+    @Test fun `priority sorts 1 first and unset last`() {
+        val sorted = TaskSorting.open(listOf(t("none"), t("nine", p = 9), t("one", p = 1), t("five", p = 5))).map { it.title }
+        assertEquals(listOf("one", "five", "nine", "none"), sorted)
     }
 
     @Test fun `completed tasks sort newest first`() {
