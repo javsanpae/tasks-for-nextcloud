@@ -34,7 +34,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: gradle/actions/setup-gradle@v4   # also validates the Gradle wrapper checksum
+      - uses: gradle/actions/setup-gradle@v5   # also validates the Gradle wrapper checksum
 
       # recordRoborazziDebug runs ALL unit tests and also renders the real screens to PNG.
       # assembleRelease proves the R8-minified build still works (unsigned here).
