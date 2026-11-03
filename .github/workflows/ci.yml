@@ -46,7 +46,7 @@ jobs:
         run: python3 .github/scripts/test_summary.py >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload debug APK (try this PR on a phone)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
@@ -54,7 +54,7 @@ jobs:
 
       - name: Upload UI screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ui-screenshots
           path: app/build/screenshots/
@@ -63,7 +63,7 @@ jobs:
 
       - name: Upload reports
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: reports
           path: |
