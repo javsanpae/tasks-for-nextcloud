@@ -27,7 +27,7 @@ jobs:
       version_code: ${{ steps.next.outputs.version_code }}
       bump: ${{ steps.next.outputs.bump }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0   # full history and all tags
       - id: next
@@ -44,7 +44,7 @@ jobs:
     env:
       TAG: ${{ needs.version.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
 
